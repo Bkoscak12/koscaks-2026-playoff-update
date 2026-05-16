@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koscak's 2026 Playoff Update</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --nhl-navy: #061a33;
+            --nhl-navy-2: #0c274a;
+            --ice-white: #f7faff;
+            --cup-silver: #c8d0da;
+            --goal-red: #d71920;
+            --trophy-gold: #c9a227;
+            --ink: #f7faff;
+            --muted: #c8d0da;
+            --page-bg: #061a33;
+            --surface: #0b223f;
+            --surface-2: #123157;
+            --line: rgba(200, 208, 218, 0.24);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--page-bg);
+            color: var(--ink);
+            min-height: 100vh;
+        }
+
+        #app-container {
+            width: 100%;
+            background-color: var(--page-bg);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        header {
+            align-items: center;
+            background:
+                radial-gradient(circle at 18% 50%, rgba(201, 162, 39, 0.28) 0%, rgba(201, 162, 39, 0.08) 24%, transparent 42%),
+                linear-gradient(135deg, #041121 0%, var(--nhl-navy) 48%, #102f56 100%);
+            color: var(--ice-white);
+            display: flex;
+            flex-direction: row;
+            gap: 22px;
+            justify-content: center;
+            padding: 18px 20px 22px;
+            text-align: center;
+            font-weight: 700;
+            z-index: 10;
+            box-shadow: inset 0 -1px 0 rgba(201, 162, 39, 0.38), 0 12px 30px rgba(0,0,0,0.34);
+        }
+        .header-copy {
+            min-width: 0;
+            text-align: left;
+        }
+        .header-photo.loaded + .header-copy {
+            text-align: left;
+        }
+        .app-title {
+            font-size: clamp(20px, 4vw, 34px);
+            line-height: 1.2;
+        }
+        .tagline {
+            color: var(--trophy-gold);
+            font-size: clamp(12px, 2vw, 16px);
+            font-weight: 800;
+            line-height: 1.3;
+            margin-top: 6px;
+            text-transform: uppercase;
+        }
+        .header-photo {
+            border: 5px solid var(--trophy-gold);
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px rgba(247, 250, 255, 0.12), 0 14px 36px rgba(0, 0, 0, 0.45);
+            display: none;
+            flex: 0 0 clamp(110px, 16vw, 180px);
+            height: clamp(110px, 16vw, 180px);
+            margin: 0;
+            object-fit: cover;
+            width: clamp(110px, 20vw, 190px);
+        }
+        .header-photo.loaded {
+            display: block;
+        }
+
+        main {
+            flex: 1;
+            margin: 0 auto;
+            max-width: 1180px;
+            padding: 24px;
+            width: 100%;
+        }
+
+        .view { display: none; }
+        .view.active { display: block; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+            border: 1px solid var(--line);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .status-live { color: var(--goal-red); animation: pulse 2s infinite; }
+        .status-final { color: var(--muted); }
+        .status-future { color: var(--trophy-gold); }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .team-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .team-name { display: flex; align-items: center; gap: 10px; }
+        .score { font-size: 22px; }
+        .winner { font-weight: 800; color: var(--trophy-gold); }
+        .loser { color: #7f8c87; }
+        .featured-game {
+            background: linear-gradient(135deg, #0d2a4f 0%, #061a33 62%, #211c0d 100%);
+            border-color: rgba(201, 162, 39, 0.45);
+            grid-column: 1 / -1;
+            padding: 22px;
+        }
+        .featured-label {
+            color: var(--trophy-gold);
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+        .featured-matchup {
+            align-items: center;
+            display: grid;
+            gap: 16px;
+            grid-template-columns: 1fr auto 1fr;
+            margin: 18px 0;
+        }
+        .featured-team {
+            align-items: center;
+            display: flex;
+            gap: 12px;
+            min-width: 0;
+        }
+        .featured-team.home { justify-content: flex-end; text-align: right; }
+        .featured-team img {
+            height: 54px;
+            object-fit: contain;
+            width: 54px;
+        }
+        .featured-abbrev {
+            font-size: clamp(28px, 6vw, 52px);
+            font-weight: 950;
+            line-height: 1;
+        }
+        .featured-score {
+            color: var(--trophy-gold);
+            font-size: clamp(34px, 7vw, 60px);
+            font-weight: 950;
+            line-height: 1;
+        }
+        .featured-at {
+            color: var(--cup-silver);
+            font-size: 18px;
+            font-weight: 900;
+        }
+        .featured-details {
+            color: var(--muted);
+            display: flex;
+            flex-wrap: wrap;
+            font-size: 13px;
+            font-weight: 700;
+            gap: 10px 18px;
+            justify-content: center;
+            text-transform: uppercase;
+        }
+
+        .story-card { display: flex; gap: 15px; cursor: pointer; text-decoration: none; transition: background 0.2s; }
+        .story-card.lead-story {
+            display: grid;
+            gap: 0;
+            grid-column: 1 / -1;
+            grid-template-columns: minmax(260px, 1.05fr) 1fr;
+            overflow: hidden;
+            padding: 0;
+        }
+        .lead-story .story-img {
+            border-radius: 0;
+            height: 100%;
+            min-height: 260px;
+            width: 100%;
+        }
+        .lead-story .story-content {
+            padding: 24px;
+        }
+        .lead-story .story-title {
+            font-size: clamp(24px, 4vw, 42px);
+            line-height: 1.08;
+        }
+        .story-card:hover { background: var(--surface-2); }
+        .story-img { width: 92px; height: 92px; border-radius: 8px; object-fit: cover; background: #333; }
+        .story-content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .story-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--ink); line-height: 1.4; }
+        .story-source { font-size: 11px; color: var(--muted); text-transform: uppercase; line-height: 1.4; }
+        .story-card.medium-story {
+            min-height: 128px;
+        }
+        .section-title {
+            align-items: center;
+            color: var(--trophy-gold);
+            display: flex;
+            font-size: 15px;
+            font-weight: 800;
+            gap: 8px;
+            grid-column: 1 / -1;
+            margin: 10px 0 0;
+            text-transform: uppercase;
+        }
+        .story-search-card {
+            grid-column: 1 / -1;
+            margin-top: 22px;
+        }
+        .story-search-form {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: 1fr auto;
+        }
+        .story-search-form input {
+            background: #101010;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            color: var(--ink);
+            font: inherit;
+            min-width: 0;
+            padding: 12px;
+        }
+        .story-search-form input::placeholder { color: #718075; }
+        .story-search-form button {
+            align-items: center;
+            background: #ffffff;
+            border: 0;
+            border-radius: 8px;
+            color: var(--nhl-navy);
+            cursor: pointer;
+            display: inline-flex;
+            font: inherit;
+            font-weight: 800;
+            gap: 8px;
+            justify-content: center;
+            padding: 0 16px;
+        }
+        .story-search-form button:hover { background: #dde6f2; }
+        .search-helper {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.4;
+            margin-top: 10px;
+        }
+        #story-search-results {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            margin-top: 16px;
+        }
+        .bracket-round { margin-bottom: 18px; }
+        .round-title {
+            color: var(--trophy-gold);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0;
+            margin: 0 0 8px;
+            text-transform: uppercase;
+        }
+        .series-card { padding: 12px; }
+        .series-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0;
+        }
+        .series-team {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .series-team img { width: 24px; height: 24px; object-fit: contain; }
+        .series-wins {
+            min-width: 24px;
+            text-align: right;
+            font-size: 18px;
+            font-weight: 800;
+        }
+        .series-winner { color: var(--trophy-gold); }
+        .series-loser { color: #738078; }
+        .series-meta {
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 6px;
+            padding-top: 8px;
+            text-transform: uppercase;
+        }
+        .series-placeholder {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.45;
+            padding: 8px 0 2px;
+            text-align: center;
+        }
+        .data-note {
+            color: var(--muted);
+            font-size: 12px;
+            grid-column: 1 / -1;
+            line-height: 1.4;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .news-ticker {
+            align-items: center;
+            background: linear-gradient(90deg, #071526 0%, #0d2748 52%, #071526 100%);
+            border-bottom: 1px solid rgba(201, 162, 39, 0.35);
+            color: var(--ice-white);
+            display: flex;
+            gap: 12px;
+            order: 1;
+            overflow: hidden;
+            padding: 9px 0;
+            white-space: nowrap;
+        }
+        .ticker-label {
+            align-items: center;
+            background: var(--trophy-gold);
+            border-radius: 999px;
+            color: #061a33;
+            display: inline-flex;
+            flex: 0 0 auto;
+            font-size: 12px;
+            font-weight: 900;
+            gap: 6px;
+            margin-left: 14px;
+            padding: 7px 11px;
+            text-transform: uppercase;
+        }
+        .ticker-window {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .ticker-track {
+            align-items: center;
+            display: inline-flex;
+            gap: 28px;
+            min-width: max-content;
+            will-change: transform;
+        }
+        .ticker-track.running {
+            animation: ticker-scroll 260s linear infinite;
+        }
+        .ticker-track:hover {
+            animation-play-state: paused;
+        }
+        .ticker-item {
+            color: var(--ice-white);
+            font-size: 14px;
+            font-weight: 800;
+            text-decoration: none;
+        }
+        .ticker-item:hover {
+            text-decoration: underline;
+        }
+        .ticker-dot {
+            color: var(--trophy-gold);
+            font-weight: 900;
+        }
+        @keyframes ticker-scroll {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
+        nav {
+            order: 2;
+            position: sticky;
+            top: 0;
+            background: var(--nhl-navy-2);
+            display: flex;
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            box-shadow: 0 2px 14px rgba(0,0,0,0.22);
+            justify-content: center;
+            padding-bottom: 0;
+            z-index: 9;
+        }
+
+        main { order: 3; }
+
+        nav .nav-item {
+            max-width: 180px;
+        }
+
+        .nav-item {
+            flex: 1 1 0;
+            padding: 15px 0;
+            text-align: center;
+            color: var(--muted);
+            cursor: pointer;
+            transition: color 0.2s;
+            font-size: 12px;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .nav-item.active { color: #ffffff; }
+        .nav-item:hover { background-color: var(--surface-2); }
+
+        .loader { text-align: center; padding: 20px; color: var(--muted); font-style: italic; }
+        .load-more-wrap {
+            grid-column: 1 / -1;
+            text-align: center;
+        }
+        .load-more-btn {
+            background: #ffffff;
+            border: 0;
+            border-radius: 999px;
+            color: var(--nhl-navy);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 900;
+            padding: 12px 18px;
+        }
+        .load-more-btn:hover { background: #dde6f2; }
+        .load-more-btn[hidden] { display: none; }
+
+        #scores-container,
+        #stories-container,
+        #canadiens-stories-container {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        #canadiens-stories-section {
+            margin-top: 24px;
+        }
+
+        #bracket-container {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+
+        .bracket-round .card,
+        #scores-container .card,
+        #stories-container .card,
+        #canadiens-stories-container .card {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                background-color: var(--page-bg);
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            #app-container {
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            header {
+                flex-direction: row;
+                gap: 12px;
+                justify-content: flex-start;
+                padding: 14px 12px;
+                text-align: left;
+            }
+
+            .header-photo.loaded + .header-copy {
+                text-align: left;
+            }
+
+            .header-photo {
+                border-width: 4px;
+                flex-basis: 78px;
+                height: 78px;
+                width: 78px;
+            }
+
+            .app-title {
+                font-size: 17px;
+            }
+
+            .tagline {
+                font-size: 11px;
+            }
+
+            main {
+                overflow-y: auto;
+                padding: 15px;
+                padding-bottom: calc(82px + env(safe-area-inset-bottom));
+            }
+
+            nav {
+                border-bottom: none;
+                bottom: 0;
+                box-shadow: none;
+                left: 0;
+                order: 4;
+                padding-bottom: env(safe-area-inset-bottom);
+                position: absolute;
+                right: 0;
+                top: auto;
+            }
+
+            .news-ticker {
+                order: 2;
+                padding: 7px 0;
+            }
+
+            .ticker-label {
+                font-size: 10px;
+                margin-left: 8px;
+                padding: 6px 9px;
+            }
+
+            .ticker-item {
+                font-size: 12px;
+            }
+
+            nav .nav-item {
+                max-width: none;
+            }
+
+            #scores-container,
+            #stories-container,
+            #canadiens-stories-container,
+            #bracket-container {
+                display: block;
+            }
+
+            #scores-container .card,
+            #stories-container .card,
+            #canadiens-stories-container .card,
+            #story-search-results .card,
+            .bracket-round .card {
+                margin-bottom: 15px;
+            }
+
+            .story-search-form {
+                grid-template-columns: 1fr;
+            }
+
+            .story-search-form button {
+                min-height: 44px;
+            }
+
+            .story-img {
+                height: 80px;
+                width: 80px;
+            }
+
+            .story-card.lead-story {
+                display: flex;
+                padding: 15px;
+            }
+
+            .lead-story .story-img {
+                border-radius: 8px;
+                height: 80px;
+                min-height: 0;
+                width: 80px;
+            }
+
+            .lead-story .story-content {
+                padding: 0;
+            }
+
+            .lead-story .story-title {
+                font-size: 14px;
+                line-height: 1.4;
+            }
+
+            .featured-matchup {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .featured-team,
+            .featured-team.home {
+                justify-content: center;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <header>
+            <img class="header-photo" src="koscak-trophy.png" alt="Koscak holding a hockey trophy">
+            <div class="header-copy">
+                <div class="app-title"><i class="fa-solid fa-hockey-puck"></i> Koscak's 2026 Playoff Update</div>
+                <div class="tagline">The Puck Drops Here</div>
+            </div>
+        </header>
+
+        <section class="news-ticker" aria-label="Live hockey news headlines">
+            <div class="ticker-label"><i class="fa-solid fa-bolt"></i> Live Feed</div>
+            <div class="ticker-window">
+                <div id="ticker-track" class="ticker-track">
+                    <span class="ticker-item">Loading latest hockey headlines...</span>
+                </div>
+            </div>
+        </section>
+
+        <main>
+            <div id="scores-view" class="view active">
+                <div id="scores-container">
+                    <div class="loader"><i class="fas fa-spinner fa-spin"></i> Fetching live scores...</div>
+                </div>
+                <section class="card story-search-card">
+                    <h2 class="section-title" style="margin-top:0;"><i class="fa-solid fa-magnifying-glass"></i> Search Hockey Stories</h2>
+                    <form id="story-search-form" class="story-search-form">
+                        <input id="story-search-input" type="search" placeholder="Search Edmonton, Matthews, Canadiens, player, team..." autocomplete="off">
+                        <button id="story-search-button" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+                    </form>
+                    <p class="search-helper">Search the hockey news feed by team, player, or playoff topic.</p>
+                    <div id="story-search-results"></div>
+                </section>
+                <section id="canadiens-stories-section">
+                    <h2 class="section-title"><i class="fa-solid fa-eye"></i> Canadiens Watch</h2>
+                    <div id="canadiens-stories-container">
+                        <div class="loader"><i class="fas fa-spinner fa-spin"></i> Fetching Canadiens stories...</div>
+                    </div>
+                </section>
+            </div>
+
+            <div id="bracket-view" class="view">
+                <div id="bracket-container">
+                    <div class="loader"><i class="fas fa-spinner fa-spin"></i> Fetching live standings...</div>
+                </div>
+            </div>
+
+            <div id="stories-view" class="view">
+                <div id="stories-container"></div>
+            </div>
+        </main>
+
+        <nav>
+            <div class="nav-item active" onclick="switchTab('scores', this)">
+                <i class="fa-solid fa-scoreboard"></i>
+                Scores
+            </div>
+            <div class="nav-item" onclick="switchTab('bracket', this)">
+                <i class="fa-solid fa-sitemap"></i>
+                Standings
+            </div>
+            <div class="nav-item" onclick="switchTab('stories', this)">
+                <i class="fa-regular fa-newspaper"></i>
+                Latest Headlines
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        let allStories = [];
+        let visibleStoryCount = 12;
+
+        document.querySelector('.header-photo').addEventListener('load', event => {
+            event.currentTarget.classList.add('loaded');
+        });
+
+        const API_LINKS = {
+            liveScores: 'https://api-web.nhle.com/v1/score/now',
+            localLiveScores: '/api/score/now',
+            localBracket: '/api/bracket',
+            localStories: '/api/stories',
+            localCanadiensStories: '/api/stories/canadiens',
+            localStorySearch: '/api/stories/search',
+            teamLogos: 'https://assets.nhle.com/logos/nhl/svg/',
+            newsApi: 'https://newsapi.org/',
+            espnNews: 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/news'
+        };
+
+        function switchTab(tabId, navItem) {
+            document.querySelectorAll('.view').forEach(view => {
+                view.classList.remove('active');
+            });
+
+            document.querySelectorAll('.nav-item').forEach(nav => {
+                nav.classList.remove('active');
+            });
+
+            document.getElementById(`${tabId}-view`).classList.add('active');
+            navItem.classList.add('active');
+        }
+
+        function setupStorySearch() {
+            const form = document.getElementById('story-search-form');
+            const input = document.getElementById('story-search-input');
+
+            form.addEventListener('submit', event => {
+                event.preventDefault();
+                searchStories(input.value.trim());
+            });
+
+        }
+
+        async function fetchScores() {
+            const container = document.getElementById('scores-container');
+
+            try {
+                const scoreEndpoint = window.location.protocol.startsWith('http')
+                    ? API_LINKS.localLiveScores
+                    : API_LINKS.liveScores;
+                const response = await fetch(scoreEndpoint, { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error(`NHL API returned ${response.status}`);
+                }
+
+                const data = await response.json();
+                const games = data.games || [];
+
+                if (games.length === 0) {
+                    container.innerHTML = `<div class="card"><p style="text-align:center; color:var(--muted);">No games scheduled today.</p></div>`;
+                    return;
+                }
+
+                renderScores(games, data.currentDate);
+            } catch (error) {
+                console.error("Error fetching NHL scores:", error);
+                container.innerHTML = `
+                    <div class="card">
+                        <p style="text-align:center; color:#c0392b; font-weight:700;">Real-time NHL data could not load.</p>
+                        <p style="text-align:center; color:var(--muted); font-size:13px; margin-top:8px;">
+                            Source: ${API_LINKS.liveScores}
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderScores(games, currentDate) {
+            const container = document.getElementById('scores-container');
+            const updateTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            container.innerHTML = `
+                <div class="data-note">
+                    Today's Playoff Slate • Updated ${updateTime}
+                </div>
+            `;
+
+            games.forEach((game, index) => {
+                let statusText = game.gameState;
+                let statusClass = 'status-future';
+
+                if (game.gameState === 'LIVE' || game.gameState === 'CRIT') {
+                    const period = game.periodDescriptor ? game.periodDescriptor.number : '';
+                    const clock = game.clock ? game.clock.timeRemaining : '';
+                    statusText = `LIVE - P${period} | ${clock}`;
+                    statusClass = 'status-live';
+                } else if (game.gameState === 'FINAL' || game.gameState === 'OFF') {
+                    statusText = 'FINAL';
+                    statusClass = 'status-final';
+                } else if (game.gameState === 'FUT' || game.gameState === 'PRE') {
+                    const gameTime = game.startTimeUTC
+                        ? new Date(game.startTimeUTC).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })
+                        : '8:00 PM';
+                    statusText = `TODAY @ ${gameTime}`;
+                }
+
+                const seriesText = getSeriesText(game.seriesStatus);
+                const awayScore = game.awayTeam.score || 0;
+                const homeScore = game.homeTeam.score || 0;
+                const isFinal = statusClass === 'status-final';
+                const awayClass = isFinal && awayScore > homeScore ? 'winner' : (isFinal ? 'loser' : '');
+                const homeClass = isFinal && homeScore > awayScore ? 'winner' : (isFinal ? 'loser' : '');
+
+                const cardHTML = `
+                    ${index === 0 ? getFeaturedGameHTML(game, statusText, seriesText, awayScore, homeScore) : ''}
+                    <div class="card">
+                        <div class="game-header">
+                            <span class="${statusClass}"><i class="fa-solid fa-circle" style="font-size:8px; vertical-align:middle;"></i> ${statusText}</span>
+                            <span style="color:var(--muted);">${seriesText}</span>
+                        </div>
+                        <div class="team-row ${awayClass}">
+                            <div class="team-name">
+                                <img src="${game.awayTeam.logo || `${API_LINKS.teamLogos}${game.awayTeam.abbrev}_light.svg`}" width="30" onerror="this.style.display='none'" alt="">
+                                ${game.awayTeam.abbrev}
+                            </div>
+                            <div class="score">${awayScore}</div>
+                        </div>
+                        <div class="team-row ${homeClass}">
+                            <div class="team-name">
+                                <img src="${game.homeTeam.logo || `${API_LINKS.teamLogos}${game.homeTeam.abbrev}_light.svg`}" width="30" onerror="this.style.display='none'" alt="">
+                                ${game.homeTeam.abbrev}
+                            </div>
+                            <div class="score">${homeScore}</div>
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML += cardHTML;
+            });
+        }
+
+        function getFeaturedGameHTML(game, statusText, seriesText, awayScore, homeScore) {
+            const venue = game.venue && game.venue.default ? game.venue.default : '';
+            const broadcasts = (game.tvBroadcasts || []).map(broadcast => broadcast.network).slice(0, 4).join(', ');
+            const gameNumber = game.seriesStatus && game.seriesStatus.gameNumberOfSeries ? `Game ${game.seriesStatus.gameNumberOfSeries}` : 'Playoff Game';
+
+            return `
+                <section class="card featured-game">
+                    <div class="featured-label">Featured Matchup • ${gameNumber}</div>
+                    <div class="featured-matchup">
+                        <div class="featured-team">
+                            <img src="${game.awayTeam.logo || `${API_LINKS.teamLogos}${game.awayTeam.abbrev}_light.svg`}" onerror="this.style.display='none'" alt="">
+                            <div>
+                                <div class="featured-abbrev">${game.awayTeam.abbrev}</div>
+                                <div class="featured-score">${awayScore}</div>
+                            </div>
+                        </div>
+                        <div class="featured-at">@</div>
+                        <div class="featured-team home">
+                            <div>
+                                <div class="featured-abbrev">${game.homeTeam.abbrev}</div>
+                                <div class="featured-score">${homeScore}</div>
+                            </div>
+                            <img src="${game.homeTeam.logo || `${API_LINKS.teamLogos}${game.homeTeam.abbrev}_light.svg`}" onerror="this.style.display='none'" alt="">
+                        </div>
+                    </div>
+                    <div class="featured-details">
+                        <span>${statusText}</span>
+                        ${seriesText ? `<span>${seriesText}</span>` : ''}
+                        ${venue ? `<span>${venue}</span>` : ''}
+                        ${broadcasts ? `<span>${broadcasts}</span>` : ''}
+                    </div>
+                </section>
+            `;
+        }
+
+        function getSeriesText(seriesStatus) {
+            if (!seriesStatus) {
+                return '';
+            }
+
+            if (seriesStatus.shortTitle) {
+                return seriesStatus.shortTitle;
+            }
+
+            const topTeam = seriesStatus.topSeedTeamAbbrev;
+            const bottomTeam = seriesStatus.bottomSeedTeamAbbrev;
+            const topWins = seriesStatus.topSeedWins;
+            const bottomWins = seriesStatus.bottomSeedWins;
+
+            if (!topTeam || !bottomTeam || topWins === undefined || bottomWins === undefined) {
+                return seriesStatus.seriesTitle || '';
+            }
+
+            if (topWins === bottomWins) {
+                return `Series tied ${topWins}-${bottomWins}`;
+            }
+
+            return topWins > bottomWins
+                ? `${topTeam} leads ${topWins}-${bottomWins}`
+                : `${bottomTeam} leads ${bottomWins}-${topWins}`;
+        }
+
+        async function fetchBracket() {
+            const container = document.getElementById('bracket-container');
+
+            try {
+                const response = await fetch(API_LINKS.localBracket, { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error(`Standings API returned ${response.status}`);
+                }
+
+                const data = await response.json();
+                renderBracket(data);
+            } catch (error) {
+                console.error("Error fetching NHL standings:", error);
+                container.innerHTML = `
+                    <div class="card">
+                        <p style="text-align:center; color:#c0392b; font-weight:700;">Real-time standings data could not load.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderBracket(data) {
+            const container = document.getElementById('bracket-container');
+            const rounds = getBracketRounds(data);
+            const updateTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            container.innerHTML = `
+                <div class="data-note">
+                    Playoff Picture • Round ${data.currentRound || ''} • Updated ${updateTime}
+                </div>
+            `;
+
+            rounds.forEach(round => {
+                const roundBlock = document.createElement('section');
+                roundBlock.className = 'bracket-round';
+                roundBlock.innerHTML = `<h3 class="round-title">${formatRoundLabel(round.roundLabel || round.roundAbbrev)}</h3>`;
+
+                (round.series || []).forEach(series => {
+                    roundBlock.insertAdjacentHTML('beforeend', getSeriesCardHTML(series));
+                });
+
+                container.appendChild(roundBlock);
+            });
+        }
+
+        function getBracketRounds(data) {
+            const roundsByNumber = new Map((data.rounds || []).map(round => [round.roundNumber, round]));
+            const finalRound = roundsByNumber.get(4) || {
+                roundNumber: 4,
+                roundLabel: 'stanley-cup-final',
+                roundAbbrev: 'SCF',
+                series: [
+                    {
+                        seriesLetter: 'SCF',
+                        neededToWin: 4,
+                        topSeed: { abbrev: 'TBD', wins: 0, logo: `${API_LINKS.teamLogos}team-tbd-light.svg` },
+                        bottomSeed: { abbrev: 'TBD', wins: 0, logo: `${API_LINKS.teamLogos}team-tbd-light.svg` },
+                        isPlaceholder: true
+                    }
+                ]
+            };
+
+            roundsByNumber.set(4, finalRound);
+
+            return Array.from(roundsByNumber.values())
+                .sort((firstRound, secondRound) => secondRound.roundNumber - firstRound.roundNumber);
+        }
+
+        function getSeriesCardHTML(series) {
+            if (series.isPlaceholder) {
+                return `
+                    <div class="card series-card">
+                        <div class="series-placeholder">
+                            Stanley Cup Final matchup will appear here when both conference champions are set.
+                        </div>
+                        <div class="series-meta">${series.seriesLetter || 'SCF'} • Matchup pending</div>
+                    </div>
+                `;
+            }
+
+            const top = series.topSeed || {};
+            const bottom = series.bottomSeed || {};
+            const isTopWinner = series.winningTeamId && series.winningTeamId === top.id;
+            const isBottomWinner = series.winningTeamId && series.winningTeamId === bottom.id;
+            const topClass = series.winningTeamId ? (isTopWinner ? 'series-winner' : 'series-loser') : '';
+            const bottomClass = series.winningTeamId ? (isBottomWinner ? 'series-winner' : 'series-loser') : '';
+            const status = getSeriesLine(top.abbrev, top.wins, bottom.abbrev, bottom.wins, series.neededToWin);
+
+            return `
+                <div class="card series-card">
+                    <div class="series-row ${topClass}">
+                        <div class="series-team">
+                            <img src="${top.logo || `${API_LINKS.teamLogos}team-tbd-light.svg`}" onerror="this.style.display='none'" alt="">
+                            ${top.abbrev || 'TBD'}
+                        </div>
+                        <div class="series-wins">${top.wins || 0}</div>
+                    </div>
+                    <div class="series-row ${bottomClass}">
+                        <div class="series-team">
+                            <img src="${bottom.logo || `${API_LINKS.teamLogos}team-tbd-light.svg`}" onerror="this.style.display='none'" alt="">
+                            ${bottom.abbrev || 'TBD'}
+                        </div>
+                        <div class="series-wins">${bottom.wins || 0}</div>
+                    </div>
+                    <div class="series-meta">${series.seriesLetter || ''} • ${status}</div>
+                </div>
+            `;
+        }
+
+        function formatRoundLabel(label) {
+            return (label || 'Round')
+                .replaceAll('-', ' ')
+                .replace(/\b\w/g, letter => letter.toUpperCase());
+        }
+
+        function getSeriesLine(topTeam, topWins = 0, bottomTeam, bottomWins = 0, neededToWin = 4) {
+            if (topTeam === 'TBD' || bottomTeam === 'TBD') {
+                return 'Matchup pending';
+            }
+
+            if (topWins >= neededToWin) {
+                return `${topTeam} wins ${topWins}-${bottomWins}`;
+            }
+
+            if (bottomWins >= neededToWin) {
+                return `${bottomTeam} wins ${bottomWins}-${topWins}`;
+            }
+
+            if (topWins === bottomWins) {
+                return `Series tied ${topWins}-${bottomWins}`;
+            }
+
+            return topWins > bottomWins
+                ? `${topTeam} leads ${topWins}-${bottomWins}`
+                : `${bottomTeam} leads ${bottomWins}-${topWins}`;
+        }
+
+        async function fetchStories() {
+            const container = document.getElementById('stories-container');
+            container.innerHTML = `<div class="loader"><i class="fas fa-spinner fa-spin"></i> Fetching live stories...</div>`;
+
+            try {
+                const response = await fetch(API_LINKS.localStories, { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error(`Stories API returned ${response.status}`);
+                }
+
+                const data = await response.json();
+                allStories = sortStoriesByDate(normalizeStories(data));
+                visibleStoryCount = 12;
+                renderTicker(allStories);
+                renderMainStories(data.status === 'ok' ? 'NewsAPI' : 'ESPN NHL');
+            } catch (error) {
+                console.error("Error fetching NHL stories:", error);
+                renderTicker([]);
+                container.innerHTML = `
+                    <div class="card">
+                        <p style="text-align:center; color:#c0392b; font-weight:700;">Real-time stories could not load.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function fetchCanadiensStories() {
+            const container = document.getElementById('canadiens-stories-container');
+            container.innerHTML = `<div class="loader"><i class="fas fa-spinner fa-spin"></i> Fetching Canadiens stories...</div>`;
+
+            try {
+                const response = await fetch(API_LINKS.localCanadiensStories, { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error(`Canadiens stories API returned ${response.status}`);
+                }
+
+                const data = await response.json();
+                const sourceName = data.status === 'ok' ? 'NewsAPI' : 'ESPN NHL';
+                const stories = filterCanadiensStories(normalizeStories(data));
+                renderStories(stories, sourceName, container, 'Canadiens Watch');
+            } catch (error) {
+                console.error("Error fetching Canadiens stories:", error);
+                container.innerHTML = `
+                    <div class="card">
+                        <p style="text-align:center; color:#c0392b; font-weight:700;">Canadiens stories could not load.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function searchStories(query) {
+            const container = document.getElementById('story-search-results');
+
+            if (!query) {
+                container.innerHTML = `
+                    <div class="data-note">Type a team, player, or topic to search stories.</div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `<div class="loader"><i class="fas fa-spinner fa-spin"></i> Searching stories...</div>`;
+
+            try {
+                const response = await fetch(`${API_LINKS.localStorySearch}?q=${encodeURIComponent(query)}`, { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error(`Story search returned ${response.status}`);
+                }
+
+                const data = await response.json();
+                const sourceName = data.status === 'ok' ? 'NewsAPI archive' : 'ESPN NHL feed';
+                const stories = filterStoriesByQuery(normalizeStories(data), query);
+
+                if (stories.length === 0) {
+                    const latestStories = sortStoriesByDate(normalizeStories(data)).slice(0, 6);
+                    container.innerHTML = `
+                        <div class="data-note">No exact live-feed matches for "${query}" right now. Showing the latest NHL headlines instead.</div>
+                    `;
+                    latestStories.forEach(article => {
+                        container.innerHTML += getStoryCardHTML(article);
+                    });
+                    return;
+                }
+
+                renderStories(stories, sourceName, container, `Search results for "${query}"`);
+            } catch (error) {
+                console.error("Error searching stories:", error);
+                container.innerHTML = `
+                    <div class="card">
+                        <p style="text-align:center; color:#c0392b; font-weight:700;">Story search could not load.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function normalizeStories(data) {
+            if (Array.isArray(data.articles) && data.status === 'ok') {
+                return data.articles.map(article => ({
+                    title: article.title,
+                    description: article.description,
+                    source: article.source ? article.source.name : 'NewsAPI',
+                    img: article.urlToImage,
+                    url: article.url,
+                    publishedAt: article.publishedAt,
+                    searchText: [
+                        article.title,
+                        article.description,
+                        article.content,
+                        article.author,
+                        article.source ? article.source.name : ''
+                    ].filter(Boolean).join(' ')
+                }));
+            }
+
+            return (data.articles || []).map(article => ({
+                title: article.headline,
+                description: article.description,
+                source: 'ESPN NHL',
+                img: article.images && article.images[0] ? article.images[0].url : '',
+                url: article.links && article.links.web ? article.links.web.href : '#',
+                publishedAt: article.published || article.lastModified,
+                searchText: [
+                    article.headline,
+                    article.description,
+                    article.byline,
+                    ...(article.images || []).flatMap(image => [image.name, image.caption, image.alt, image.credit]),
+                    ...(article.categories || []).flatMap(category => [
+                        category.description,
+                        category.team ? category.team.description : '',
+                        category.athlete ? category.athlete.description : '',
+                        category.league ? category.league.description : ''
+                    ])
+                ].filter(Boolean).join(' ')
+            }));
+        }
+
+        function sortStoriesByDate(stories) {
+            return stories.sort((firstStory, secondStory) => (
+                new Date(secondStory.publishedAt || 0) - new Date(firstStory.publishedAt || 0)
+            ));
+        }
+
+        function filterCanadiensStories(stories) {
+            const canadiensPattern = /canadiens|montr[ée]al|montreal|\\bmtl\\b|habs|lane hutson|jakub dobes|alex newhook/i;
+            const filtered = stories.filter(article => (
+                canadiensPattern.test(article.title || '') ||
+                canadiensPattern.test(article.description || '') ||
+                canadiensPattern.test(article.source || '')
+            ));
+
+            return filtered.length > 0 ? filtered : stories;
+        }
+
+        function filterStoriesByQuery(stories, query) {
+            const terms = expandSearchTerms(query);
+
+            return stories.filter(article => {
+                const haystack = `${article.title || ''} ${article.description || ''} ${article.source || ''} ${article.searchText || ''}`.toLowerCase();
+                return terms.some(term => haystack.includes(term));
+            });
+        }
+
+        function expandSearchTerms(query) {
+            const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+            const aliases = new Set(terms);
+            const joined = terms.join(' ');
+
+            if (/canadiens|canadians|montreal|montréal|habs|mtl/.test(joined)) {
+                ['canadiens', 'canadians', 'montreal', 'montréal', 'habs', 'mtl', 'hutson', 'dobes', 'newhook'].forEach(term => aliases.add(term));
+            }
+
+            if (/edmonton|oilers|mcdavid|knoblauch/.test(joined)) {
+                ['edmonton', 'oilers', 'mcdavid', 'knoblauch'].forEach(term => aliases.add(term));
+            }
+
+            if (/matthews|auston|toronto|leafs|maple/.test(joined)) {
+                ['matthews', 'auston', 'toronto', 'leafs', 'maple leafs', 'maple'].forEach(term => aliases.add(term));
+            }
+
+            return Array.from(aliases);
+        }
+
+        function renderStories(stories, sourceName, container = document.getElementById('stories-container'), label = 'Latest Headlines') {
+            const updateTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            container.innerHTML = `
+                <div class="data-note">
+                    ${label} from ${sourceName} • Updated ${updateTime}
+                </div>
+            `;
+
+            stories.slice(0, 6).forEach(article => {
+                container.innerHTML += getStoryCardHTML(article);
+            });
+        }
+
+        function renderMainStories(sourceName) {
+            const container = document.getElementById('stories-container');
+            const updateTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const visibleStories = allStories.slice(0, visibleStoryCount);
+            container.innerHTML = `
+                <div class="data-note">
+                    Latest Headlines from ${sourceName} • Newest first • Updated ${updateTime}
+                </div>
+            `;
+
+            visibleStories.forEach((article, index) => {
+                const style = index === 0 ? 'lead' : (index <= 2 ? 'medium' : 'compact');
+                container.innerHTML += getStoryCardHTML(article, style);
+            });
+
+            container.innerHTML += `
+                <div class="load-more-wrap">
+                    <button id="load-more-stories" class="load-more-btn" type="button" ${visibleStoryCount >= allStories.length ? 'hidden' : ''}>
+                        Load 12 more stories
+                    </button>
+                </div>
+            `;
+
+            const loadMoreButton = document.getElementById('load-more-stories');
+            if (loadMoreButton) {
+                loadMoreButton.addEventListener('click', () => {
+                    visibleStoryCount += 12;
+                    renderMainStories(sourceName);
+                });
+            }
+        }
+
+        function renderTicker(stories) {
+            const tickerTrack = document.getElementById('ticker-track');
+            const headlines = stories
+                .filter(article => article.title && article.url)
+                .slice(0, 18);
+
+            tickerTrack.classList.remove('running');
+
+            if (headlines.length === 0) {
+                tickerTrack.innerHTML = `<span class="ticker-item">Live headlines unavailable right now.</span>`;
+                return;
+            }
+
+            const tickerItems = [...headlines, ...headlines].map(article => `
+                <a class="ticker-item" href="${article.url}" target="_blank" rel="noopener noreferrer">${article.source} · ${formatStoryTime(article.publishedAt)} · ${article.title}</a>
+                <span class="ticker-dot">•</span>
+            `).join('');
+
+            tickerTrack.innerHTML = tickerItems;
+            tickerTrack.offsetWidth;
+            tickerTrack.classList.add('running');
+        }
+
+        function getStoryCardHTML(article, storyStyle = 'compact') {
+            const published = formatStoryTime(article.publishedAt, true);
+            const styleClass = storyStyle === 'lead' ? 'lead-story' : (storyStyle === 'medium' ? 'medium-story' : '');
+            return `
+                <a class="card story-card ${styleClass}" href="${article.url}" target="_blank" rel="noopener noreferrer">
+                    <img src="${article.img}" class="story-img" onerror="this.style.display='none'" alt="">
+                    <div class="story-content">
+                        <div class="story-title">${article.title}</div>
+                        <div class="story-source">${article.source}${published ? ` • ${published}` : ''}</div>
+                    </div>
+                </a>
+            `;
+        }
+
+        function formatStoryTime(value, includeDate = false) {
+            if (!value) {
+                return '';
+            }
+
+            const options = includeDate
+                ? { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+                : { hour: '2-digit', minute: '2-digit' };
+
+            return new Date(value).toLocaleString([], options).toUpperCase();
+        }
+
+        setupStorySearch();
+        window.searchStories = searchStories;
+        window.switchTab = switchTab;
+        fetchScores();
+        fetchBracket();
+        fetchStories();
+        fetchCanadiensStories();
+        setInterval(fetchScores, 60000);
+        setInterval(fetchBracket, 300000);
+        setInterval(fetchStories, 600000);
+        setInterval(fetchCanadiensStories, 600000);
+    </script>
+</body>
+</html>
