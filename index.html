@@ -651,6 +651,10 @@
                 gap: 8px;
             }
 
+            .featured-team.home {
+                flex-direction: column-reverse;
+            }
+
             .featured-team img {
                 height: 42px;
                 width: 42px;
@@ -738,7 +742,7 @@
                 <section class="card story-search-card">
                     <h2 class="section-title" style="margin-top:0;"><i class="fa-solid fa-magnifying-glass"></i> Search Hockey Stories</h2>
                     <form id="story-search-form" class="story-search-form">
-                        <input id="story-search-input" type="search" placeholder="Search Edmonton, Matthews, Canadiens, player, team..." autocomplete="off">
+                        <input id="story-search-input" type="search" placeholder="" aria-label="Search hockey stories" autocomplete="off">
                         <button id="story-search-button" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
                     </form>
                     <p class="search-helper">Search the hockey news feed by team, player, or playoff topic.</p>
