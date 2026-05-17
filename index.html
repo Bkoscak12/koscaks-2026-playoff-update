@@ -482,6 +482,10 @@
             color: var(--trophy-gold);
             font-weight: 900;
         }
+        .ticker-track.mobile-rotator {
+            min-width: 0;
+            width: 100%;
+        }
         @keyframes ticker-scroll {
             from { transform: translateX(0); }
             to { transform: translateX(-50%); }
@@ -636,6 +640,27 @@
 
             .ticker-item {
                 font-size: 12px;
+            }
+
+            .ticker-track {
+                display: block;
+                min-width: 0;
+                width: 100%;
+            }
+
+            .ticker-track.running {
+                animation: none;
+            }
+
+            .ticker-dot {
+                display: none;
+            }
+
+            .ticker-track .ticker-item {
+                display: block;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
 
             nav .nav-item {
@@ -794,7 +819,7 @@
 <body>
     <div id="app-container">
         <header>
-            <img class="header-photo" src="koscak-trophy.png" alt="Koscak holding a hockey trophy">
+            <img class="header-photo" src="koscak-trophy-mobile.jpg" alt="Koscak holding a hockey trophy">
             <div class="header-copy">
                 <div class="app-title"><i class="fa-solid fa-hockey-puck"></i> Koscak's 2026 Playoff Update</div>
                 <div class="tagline">The Puck Drops Here</div>
@@ -878,6 +903,7 @@
     <script>
         let allStories = [];
         let visibleStoryCount = 12;
+        let mobileTickerTimer = null;
 
         document.querySelector('.header-photo').addEventListener('load', event => {
             event.currentTarget.classList.add('loaded');
@@ -964,7 +990,6 @@
 
         async function fetchRecentScorePayloads() {
             const isLocalOrHosted = window.location.protocol.startsWith('http');
-            const yesterday = getDateStringDaysAgo(1);
 
             if (!isLocalOrHosted) {
                 const response = await fetch(API_LINKS.liveScores, { cache: 'no-store' });
@@ -976,7 +1001,7 @@
 
             const endpoints = [
                 API_LINKS.localLiveScores,
-                `${API_LINKS.localScoreDate}?date=${yesterday}`
+                ...Array.from({ length: 7 }, (_, index) => `${API_LINKS.localScoreDate}?date=${getDateStringDaysAgo(index)}`)
             ];
 
             const responses = await Promise.all(endpoints.map(endpoint => fetch(endpoint, { cache: 'no-store' })));
@@ -1019,7 +1044,7 @@
             const updateTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             container.innerHTML = `
                 <div class="data-note">
-                    Recent Playoff Slate • Today and Yesterday • Updated ${updateTime}
+                    Recent Playoff Slate • Last 7 Days • Updated ${updateTime}
                 </div>
             `;
 
@@ -1474,9 +1499,30 @@
                 .slice(0, 18);
 
             tickerTrack.classList.remove('running');
+            tickerTrack.classList.remove('mobile-rotator');
+            if (mobileTickerTimer) {
+                clearInterval(mobileTickerTimer);
+                mobileTickerTimer = null;
+            }
 
             if (headlines.length === 0) {
                 tickerTrack.innerHTML = `<span class="ticker-item">Live headlines unavailable right now.</span>`;
+                return;
+            }
+
+            if (window.matchMedia('(max-width: 640px)').matches) {
+                let headlineIndex = 0;
+                const renderMobileHeadline = () => {
+                    const article = headlines[headlineIndex % headlines.length];
+                    tickerTrack.innerHTML = `
+                        <a class="ticker-item" href="${article.url}" target="_blank" rel="noopener noreferrer">${article.source} · ${formatStoryTime(article.publishedAt)} · ${article.title}</a>
+                    `;
+                    headlineIndex += 1;
+                };
+
+                tickerTrack.classList.add('mobile-rotator');
+                renderMobileHeadline();
+                mobileTickerTimer = setInterval(renderMobileHeadline, 7000);
                 return;
             }
 
