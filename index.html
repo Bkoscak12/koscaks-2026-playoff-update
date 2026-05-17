@@ -1068,6 +1068,7 @@
                 }
 
                 const seriesText = getSeriesText(game.seriesStatus);
+                const gameDateText = formatGameDate(game.startTimeUTC);
                 const awayScore = game.awayTeam.score || 0;
                 const homeScore = game.homeTeam.score || 0;
                 const isFinal = statusClass === 'status-final';
@@ -1075,10 +1076,10 @@
                 const homeClass = isFinal && homeScore > awayScore ? 'winner' : (isFinal ? 'loser' : '');
 
                 const cardHTML = `
-                    ${index === 0 ? getFeaturedGameHTML(game, statusText, seriesText, awayScore, homeScore) : ''}
+                    ${index === 0 ? getFeaturedGameHTML(game, statusText, seriesText, gameDateText, awayScore, homeScore) : ''}
                     <div class="card">
                         <div class="game-header">
-                            <span class="${statusClass}"><i class="fa-solid fa-circle" style="font-size:8px; vertical-align:middle;"></i> ${statusText}</span>
+                            <span class="${statusClass}"><i class="fa-solid fa-circle" style="font-size:8px; vertical-align:middle;"></i> ${gameDateText} • ${statusText}</span>
                             <span style="color:var(--muted);">${seriesText}</span>
                         </div>
                         <div class="team-row ${awayClass}">
@@ -1102,7 +1103,7 @@
             });
         }
 
-        function getFeaturedGameHTML(game, statusText, seriesText, awayScore, homeScore) {
+        function getFeaturedGameHTML(game, statusText, seriesText, gameDateText, awayScore, homeScore) {
             const venue = game.venue && game.venue.default ? game.venue.default : '';
             const broadcasts = (game.tvBroadcasts || []).map(broadcast => broadcast.network).slice(0, 4).join(', ');
             const gameNumber = game.seriesStatus && game.seriesStatus.gameNumberOfSeries ? `Game ${game.seriesStatus.gameNumberOfSeries}` : 'Playoff Game';
@@ -1128,6 +1129,7 @@
                         </div>
                     </div>
                     <div class="featured-details">
+                        <span>${gameDateText}</span>
                         <span>${statusText}</span>
                         ${seriesText ? `<span>${seriesText}</span>` : ''}
                         ${venue ? `<span>${venue}</span>` : ''}
@@ -1135,6 +1137,18 @@
                     </div>
                 </section>
             `;
+        }
+
+        function formatGameDate(value) {
+            if (!value) {
+                return 'Date TBD';
+            }
+
+            return new Date(value).toLocaleDateString([], {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            }).toUpperCase();
         }
 
         function getSeriesText(seriesStatus) {
