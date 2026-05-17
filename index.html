@@ -393,6 +393,37 @@
             margin-bottom: 12px;
             text-align: center;
         }
+        .dashboard-section {
+            margin-top: 28px;
+        }
+        .dashboard-heading-row {
+            align-items: center;
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .dashboard-heading-row .section-title {
+            margin: 0;
+        }
+        .section-action {
+            align-items: center;
+            background: rgba(247, 250, 255, 0.95);
+            border: 0;
+            border-radius: 999px;
+            color: var(--nhl-navy);
+            cursor: pointer;
+            display: inline-flex;
+            flex: 0 0 auto;
+            font-size: 13px;
+            font-weight: 900;
+            gap: 7px;
+            justify-content: center;
+            padding: 10px 14px;
+        }
+        .section-action:hover {
+            background: #dde6f2;
+        }
 
         .news-ticker {
             align-items: center;
@@ -514,15 +545,10 @@
         .load-more-btn[hidden] { display: none; }
 
         #scores-container,
-        #stories-container,
-        #canadiens-stories-container {
+        #stories-container {
             display: grid;
             gap: 16px;
             grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-        }
-
-        #canadiens-stories-section {
-            margin-top: 24px;
         }
 
         #bracket-container {
@@ -533,8 +559,7 @@
 
         .bracket-round .card,
         #scores-container .card,
-        #stories-container .card,
-        #canadiens-stories-container .card {
+        #stories-container .card {
             margin-bottom: 0;
         }
 
@@ -628,14 +653,12 @@
 
             #scores-container,
             #stories-container,
-            #canadiens-stories-container,
             #bracket-container {
                 display: block;
             }
 
             #scores-container .card,
             #stories-container .card,
-            #canadiens-stories-container .card,
             #story-search-results .card,
             .bracket-round .card {
                 margin-bottom: 15px;
@@ -647,6 +670,16 @@
 
             .story-search-form button {
                 min-height: 44px;
+            }
+
+            .dashboard-heading-row {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .section-action {
+                width: 100%;
             }
 
             .story-img {
@@ -779,10 +812,34 @@
 
         <main>
             <div id="scores-view" class="view active">
-                <div id="scores-container">
-                    <div class="loader"><i class="fas fa-spinner fa-spin"></i> Fetching live scores...</div>
-                </div>
-                <section class="card story-search-card">
+                <section id="scores-section">
+                    <div id="scores-container">
+                        <div class="loader"><i class="fas fa-spinner fa-spin"></i> Fetching live scores...</div>
+                    </div>
+                </section>
+
+                <section id="road-section" class="dashboard-section">
+                    <div class="dashboard-heading-row">
+                        <h2 class="section-title"><i class="fa-solid fa-trophy"></i> Road to the Cup</h2>
+                    </div>
+                    <div id="bracket-container">
+                        <div class="loader"><i class="fas fa-spinner fa-spin"></i> Fetching Road to the Cup...</div>
+                    </div>
+                </section>
+
+                <section id="headlines-section" class="dashboard-section">
+                    <div class="dashboard-heading-row">
+                        <h2 class="section-title"><i class="fa-regular fa-newspaper"></i> Latest NHL Headlines</h2>
+                        <button id="refresh-headlines" class="section-action" type="button">
+                            <i class="fa-solid fa-rotate"></i> Refresh Headlines
+                        </button>
+                    </div>
+                    <div id="stories-container">
+                        <div class="loader"><i class="fas fa-spinner fa-spin"></i> Fetching live headlines...</div>
+                    </div>
+                </section>
+
+                <section id="search-section" class="card story-search-card dashboard-section">
                     <div class="search-title-row">
                         <h2 class="section-title"><i class="fa-solid fa-magnifying-glass"></i> Search Hockey Stories</h2>
                         <button id="search-info-toggle" class="search-info-toggle" type="button" aria-label="Show search limits" aria-expanded="false" aria-controls="search-info-note">
@@ -799,37 +856,21 @@
                     <p class="search-helper">Search the hockey news feed by team, player, or playoff topic.</p>
                     <div id="story-search-results"></div>
                 </section>
-                <section id="canadiens-stories-section">
-                    <h2 class="section-title"><i class="fa-solid fa-eye"></i> Canadiens Watch</h2>
-                    <div id="canadiens-stories-container">
-                        <div class="loader"><i class="fas fa-spinner fa-spin"></i> Fetching Canadiens stories...</div>
-                    </div>
-                </section>
-            </div>
-
-            <div id="bracket-view" class="view">
-                <div id="bracket-container">
-                    <div class="loader"><i class="fas fa-spinner fa-spin"></i> Fetching live standings...</div>
-                </div>
-            </div>
-
-            <div id="stories-view" class="view">
-                <div id="stories-container"></div>
             </div>
         </main>
 
         <nav>
-            <div class="nav-item active" onclick="switchTab('scores', this)">
+            <div class="nav-item active" onclick="scrollToDashboardSection('scores-section', this)">
                 <i class="fa-solid fa-scoreboard"></i>
                 Scores
             </div>
-            <div class="nav-item" onclick="switchTab('bracket', this)">
+            <div class="nav-item" onclick="scrollToDashboardSection('road-section', this)">
                 <i class="fa-solid fa-sitemap"></i>
-                Standings
+                Road to Cup
             </div>
-            <div class="nav-item" onclick="switchTab('stories', this)">
+            <div class="nav-item" onclick="scrollToDashboardSection('headlines-section', this)">
                 <i class="fa-regular fa-newspaper"></i>
-                Latest Headlines
+                Headlines
             </div>
         </nav>
     </div>
@@ -847,24 +888,19 @@
             localLiveScores: '/api/score/now',
             localBracket: '/api/bracket',
             localStories: '/api/stories',
-            localCanadiensStories: '/api/stories/canadiens',
             localStorySearch: '/api/stories/search',
             teamLogos: 'https://assets.nhle.com/logos/nhl/svg/',
             newsApi: 'https://newsapi.org/',
             espnNews: 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/news'
         };
 
-        function switchTab(tabId, navItem) {
-            document.querySelectorAll('.view').forEach(view => {
-                view.classList.remove('active');
-            });
-
+        function scrollToDashboardSection(sectionId, navItem) {
             document.querySelectorAll('.nav-item').forEach(nav => {
                 nav.classList.remove('active');
             });
 
-            document.getElementById(`${tabId}-view`).classList.add('active');
             navItem.classList.add('active');
+            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function setupStorySearch() {
@@ -882,6 +918,20 @@
                 const isOpen = card.classList.toggle('info-open');
                 infoToggle.setAttribute('aria-expanded', String(isOpen));
                 infoToggle.setAttribute('aria-label', isOpen ? 'Hide search limits' : 'Show search limits');
+            });
+        }
+
+        function setupHeadlineRefresh() {
+            const refreshButton = document.getElementById('refresh-headlines');
+
+            refreshButton.addEventListener('click', () => {
+                refreshButton.disabled = true;
+                refreshButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Refreshing';
+
+                fetchStories().finally(() => {
+                    refreshButton.disabled = false;
+                    refreshButton.innerHTML = '<i class="fa-solid fa-rotate"></i> Refresh Headlines';
+                });
             });
         }
 
@@ -1050,16 +1100,16 @@
             try {
                 const response = await fetch(API_LINKS.localBracket, { cache: 'no-store' });
                 if (!response.ok) {
-                    throw new Error(`Standings API returned ${response.status}`);
+                    throw new Error(`Road to the Cup API returned ${response.status}`);
                 }
 
                 const data = await response.json();
                 renderBracket(data);
             } catch (error) {
-                console.error("Error fetching NHL standings:", error);
+                console.error("Error fetching Road to the Cup:", error);
                 container.innerHTML = `
                     <div class="card">
-                        <p style="text-align:center; color:#c0392b; font-weight:700;">Real-time standings data could not load.</p>
+                        <p style="text-align:center; color:#c0392b; font-weight:700;">Road to the Cup data could not load.</p>
                     </div>
                 `;
             }
@@ -1072,7 +1122,7 @@
 
             container.innerHTML = `
                 <div class="data-note">
-                    Playoff Picture • Round ${data.currentRound || ''} • Updated ${updateTime}
+                    Road to the Cup • Round ${data.currentRound || ''} • Updated ${updateTime}
                 </div>
             `;
 
@@ -1207,30 +1257,6 @@
             }
         }
 
-        async function fetchCanadiensStories() {
-            const container = document.getElementById('canadiens-stories-container');
-            container.innerHTML = `<div class="loader"><i class="fas fa-spinner fa-spin"></i> Fetching Canadiens stories...</div>`;
-
-            try {
-                const response = await fetch(API_LINKS.localCanadiensStories, { cache: 'no-store' });
-                if (!response.ok) {
-                    throw new Error(`Canadiens stories API returned ${response.status}`);
-                }
-
-                const data = await response.json();
-                const sourceName = data.status === 'ok' ? 'NewsAPI' : 'ESPN NHL';
-                const stories = filterCanadiensStories(normalizeStories(data));
-                renderStories(stories, sourceName, container, 'Canadiens Watch');
-            } catch (error) {
-                console.error("Error fetching Canadiens stories:", error);
-                container.innerHTML = `
-                    <div class="card">
-                        <p style="text-align:center; color:#c0392b; font-weight:700;">Canadiens stories could not load.</p>
-                    </div>
-                `;
-            }
-        }
-
         async function searchStories(query) {
             const container = document.getElementById('story-search-results');
 
@@ -1322,17 +1348,6 @@
             ));
         }
 
-        function filterCanadiensStories(stories) {
-            const canadiensPattern = /canadiens|montr[ée]al|montreal|\\bmtl\\b|habs|lane hutson|jakub dobes|alex newhook/i;
-            const filtered = stories.filter(article => (
-                canadiensPattern.test(article.title || '') ||
-                canadiensPattern.test(article.description || '') ||
-                canadiensPattern.test(article.source || '')
-            ));
-
-            return filtered.length > 0 ? filtered : stories;
-        }
-
         function filterStoriesByQuery(stories, query) {
             const terms = expandSearchTerms(query);
 
@@ -1381,7 +1396,7 @@
             const visibleStories = allStories.slice(0, visibleStoryCount);
             container.innerHTML = `
                 <div class="data-note">
-                    Latest Headlines from ${sourceName} • Newest first • Updated ${updateTime}
+                    Latest NHL Headlines from ${sourceName} • Newest first • Updated ${updateTime}
                 </div>
             `;
 
@@ -1457,16 +1472,15 @@
         }
 
         setupStorySearch();
+        setupHeadlineRefresh();
         window.searchStories = searchStories;
-        window.switchTab = switchTab;
+        window.scrollToDashboardSection = scrollToDashboardSection;
         fetchScores();
         fetchBracket();
         fetchStories();
-        fetchCanadiensStories();
         setInterval(fetchScores, 60000);
         setInterval(fetchBracket, 300000);
         setInterval(fetchStories, 600000);
-        setInterval(fetchCanadiensStories, 600000);
     </script>
 </body>
 </html>
