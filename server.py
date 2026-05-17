@@ -6,6 +6,7 @@ from urllib.request import Request, urlopen
 
 
 NHL_SCORE_URL = "https://api-web.nhle.com/v1/score/now"
+NHL_SCORE_DATE_URL = "https://api-web.nhle.com/v1/score/{date}"
 NHL_BRACKET_URL = "https://api-web.nhle.com/v1/playoff-series/carousel/20252026"
 ESPN_NHL_NEWS_URL = "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/news?limit=100"
 NEWSAPI_URL = "https://newsapi.org/v2/everything"
@@ -17,6 +18,14 @@ class PuckDropHandler(SimpleHTTPRequestHandler):
 
         if path == "/api/score/now":
             self.proxy_json(NHL_SCORE_URL, "NHL scores")
+            return
+
+        if path == "/api/score/date":
+            date = parse_qs(urlparse(self.path).query).get("date", [""])[0].strip()
+            if not date:
+                self.send_error(400, "Score date is required")
+                return
+            self.proxy_json(NHL_SCORE_DATE_URL.format(date=date), f"NHL scores for {date}")
             return
 
         if path == "/api/bracket":

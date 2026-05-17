@@ -1,4 +1,5 @@
 const NHL_SCORE_URL = "https://api-web.nhle.com/v1/score/now";
+const NHL_SCORE_DATE_URL = "https://api-web.nhle.com/v1/score/";
 const NHL_BRACKET_URL = "https://api-web.nhle.com/v1/playoff-series/carousel/20252026";
 const ESPN_NHL_NEWS_URL = "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/news?limit=100";
 const NEWSAPI_URL = "https://newsapi.org/v2/everything";
@@ -16,6 +17,16 @@ exports.handler = async function handler(event) {
 
     if (apiPath === "/score/now") {
       return proxyJson(NHL_SCORE_URL, "NHL scores");
+    }
+
+    if (apiPath === "/score/date") {
+      const scoreDate = (query.date || "").trim();
+
+      if (!scoreDate) {
+        return response(400, { error: "Score date is required" });
+      }
+
+      return proxyJson(`${NHL_SCORE_DATE_URL}${scoreDate}`, `NHL scores for ${scoreDate}`);
     }
 
     if (apiPath === "/bracket") {
@@ -121,4 +132,3 @@ function response(statusCode, body) {
     body: JSON.stringify(body)
   };
 }
-

@@ -886,6 +886,7 @@
         const API_LINKS = {
             liveScores: 'https://api-web.nhle.com/v1/score/now',
             localLiveScores: '/api/score/now',
+            localScoreDate: '/api/score/date',
             localBracket: '/api/bracket',
             localStories: '/api/stories',
             localStorySearch: '/api/stories/search',
@@ -939,23 +940,15 @@
             const container = document.getElementById('scores-container');
 
             try {
-                const scoreEndpoint = window.location.protocol.startsWith('http')
-                    ? API_LINKS.localLiveScores
-                    : API_LINKS.liveScores;
-                const response = await fetch(scoreEndpoint, { cache: 'no-store' });
-                if (!response.ok) {
-                    throw new Error(`NHL API returned ${response.status}`);
-                }
-
-                const data = await response.json();
-                const games = data.games || [];
+                const scorePayloads = await fetchRecentScorePayloads();
+                const games = mergeScoreGames(scorePayloads);
 
                 if (games.length === 0) {
-                    container.innerHTML = `<div class="card"><p style="text-align:center; color:var(--muted);">No games scheduled today.</p></div>`;
+                    container.innerHTML = `<div class="card"><p style="text-align:center; color:var(--muted);">No recent playoff games found.</p></div>`;
                     return;
                 }
 
-                renderScores(games, data.currentDate);
+                renderScores(games);
             } catch (error) {
                 console.error("Error fetching NHL scores:", error);
                 container.innerHTML = `
@@ -969,12 +962,64 @@
             }
         }
 
-        function renderScores(games, currentDate) {
+        async function fetchRecentScorePayloads() {
+            const isLocalOrHosted = window.location.protocol.startsWith('http');
+            const yesterday = getDateStringDaysAgo(1);
+
+            if (!isLocalOrHosted) {
+                const response = await fetch(API_LINKS.liveScores, { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error(`NHL API returned ${response.status}`);
+                }
+                return [await response.json()];
+            }
+
+            const endpoints = [
+                API_LINKS.localLiveScores,
+                `${API_LINKS.localScoreDate}?date=${yesterday}`
+            ];
+
+            const responses = await Promise.all(endpoints.map(endpoint => fetch(endpoint, { cache: 'no-store' })));
+
+            responses.forEach(response => {
+                if (!response.ok) {
+                    throw new Error(`NHL API returned ${response.status}`);
+                }
+            });
+
+            return Promise.all(responses.map(response => response.json()));
+        }
+
+        function mergeScoreGames(scorePayloads) {
+            const gamesById = new Map();
+
+            scorePayloads.forEach(payload => {
+                (payload.games || []).forEach(game => {
+                    const gameKey = game.id || `${game.startTimeUTC}-${game.awayTeam && game.awayTeam.abbrev}-${game.homeTeam && game.homeTeam.abbrev}`;
+                    gamesById.set(gameKey, game);
+                });
+            });
+
+            return Array.from(gamesById.values()).sort((firstGame, secondGame) => (
+                new Date(secondGame.startTimeUTC || 0) - new Date(firstGame.startTimeUTC || 0)
+            ));
+        }
+
+        function getDateStringDaysAgo(daysAgo) {
+            const date = new Date();
+            date.setDate(date.getDate() - daysAgo);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function renderScores(games) {
             const container = document.getElementById('scores-container');
             const updateTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             container.innerHTML = `
                 <div class="data-note">
-                    Today's Playoff Slate • Updated ${updateTime}
+                    Recent Playoff Slate • Today and Yesterday • Updated ${updateTime}
                 </div>
             `;
 
